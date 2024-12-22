@@ -195,7 +195,6 @@ TpTab:AddTextbox({
         print("Keyword set to: " .. teleportKeyword)
     end
 })
-
 TpTab:AddToggle({
     Name = "Tween Tp on keyword",
     Default = false,
@@ -244,6 +243,13 @@ CommandsTab:AddToggle({
     end    
 })
 
+CommandsTab:AddButton({
+    Name = "Lunar Bot Chat AI",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/probablYnicKxD/ProjectLunar/main/LunarBot/Source.lua"))()
+    end
+})
+
 for i = 2, 10 do
     CommandsTab:AddToggle({
         Name = "Command Toggle " .. i,
@@ -255,4 +261,3 @@ for i = 2, 10 do
 end
 
 OrionLib:Init()
--- destroying the interface: OrionLib:Destroy()
