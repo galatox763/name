@@ -23,8 +23,11 @@ OrionLib:MakeNotification({
 local teleportKeyword = ""
 local tweenKeyword = ""
 local listening = false
+local speedListening = false
 local connections = {}
+local speedConnections = {}
 local minTweenSpeed = 1000 -- Vitesse minimale pour le tween tp
+local defaultSpeed = 16 -- Vitesse de marche par défaut
 
 local function teleportOnKeyword()
     local Players = game:GetService("Players")
@@ -106,6 +109,61 @@ local function tweenToPlayer()
     table.insert(connections, connection)
 end
 
+local function adjustSpeed()
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+
+    -- Fonction pour écouter les messages du chat
+    local function onPlayerChatted(player, message)
+        if speedListening then
+            local args = message:split(" ")
+            if args[1] == "!speed" and tonumber(args[2]) then
+                local speed = tonumber(args[2])
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                    LocalPlayer.Character.Humanoid.WalkSpeed = speed
+                    print("Vitesse changée à : " .. tostring(speed))
+                end
+            elseif args[1] == "!speed" and args[2] == "reset" then
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                    LocalPlayer.Character.Humanoid.WalkSpeed = defaultSpeed
+                    print("Vitesse réinitialisée à la valeur par défaut : " .. tostring(defaultSpeed))
+                end
+            end
+        end
+    end
+
+    -- Écoute les messages du chat pour tous les joueurs
+    for _, player in pairs(Players:GetPlayers()) do
+        local connection = player.Chatted:Connect(function(message)
+            onPlayerChatted(player, message)
+        end)
+        table.insert(speedConnections, connection)
+    end
+
+    -- Ajout d'une écoute pour les nouveaux joueurs rejoignant la partie
+    local connection = Players.PlayerAdded:Connect(function(newPlayer)
+        local connection = newPlayer.Chatted:Connect(function(message)
+            onPlayerChatted(newPlayer, message)
+        end)
+        table.insert(speedConnections, connection)
+    end)
+    table.insert(speedConnections, connection)
+end
+
+local function stopSpeedListening()
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    speedListening = false
+    for _, connection in ipairs(speedConnections) do
+        connection:Disconnect()
+    end
+    speedConnections = {}
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.WalkSpeed = defaultSpeed
+        print("Vitesse réinitialisée à la valeur par défaut : " .. tostring(defaultSpeed))
+    end
+end
+
 local function stopListening()
     listening = false
     for _, connection in ipairs(connections) do
@@ -172,7 +230,21 @@ for i = 3, 10 do
     })
 end
 
-for i = 1, 10 do
+CommandsTab:AddToggle({
+    Name = "Command Toggle 1",
+    Default = false,
+    Callback = function(Value)
+        print("Command Toggle 1: " .. tostring(Value))
+        speedListening = Value
+        if Value == true then
+            adjustSpeed()
+        else
+            stopSpeedListening()
+        end
+    end    
+})
+
+for i = 2, 10 do
     CommandsTab:AddToggle({
         Name = "Command Toggle " .. i,
         Default = false,
