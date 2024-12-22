@@ -231,7 +231,7 @@ for i = 3, 10 do
 end
 
 CommandsTab:AddToggle({
-    Name = "Command Toggle 1",
+    Name = "!speed [number] / !speed reset",
     Default = false,
     Callback = function(Value)
         print("Command Toggle 1: " .. tostring(Value))
