@@ -2,7 +2,7 @@ local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shl
 local Window = OrionLib:MakeWindow({Name = "ZlyzoxX's Hub", HidePremium = false, SaveConfig = true, ConfigFolder = "OrionTest"})
 
 local TpTab = Window:MakeTab({
-    Name = "Tp utilitys",
+    Name = "Tp utilities",
     Icon = "rbxassetid://4483345998",
     PremiumOnly = false
 })
@@ -14,7 +14,7 @@ local CommandsTab = Window:MakeTab({
 })
 
 OrionLib:MakeNotification({
-    Name = "Script éxécuté!",
+    Name = "Script executed!",
     Content = ".",
     Image = "rbxassetid://4483345998",
     Time = 5
@@ -26,20 +26,17 @@ local listening = false
 local speedListening = false
 local connections = {}
 local speedConnections = {}
-local minTweenSpeed = 1000 -- Vitesse minimale pour le tween tp
-local defaultSpeed = 16 -- Vitesse de marche par défaut
+local minTweenSpeed = 1000
+local defaultSpeed = 16
 
 local function teleportOnKeyword()
     local Players = game:GetService("Players")
     local LocalPlayer = Players.LocalPlayer
 
-    -- Fonction pour écouter les messages du chat
     local function onPlayerChatted(player, message)
         if listening and string.lower(message) == string.lower(teleportKeyword) then
-            -- Vérifie si le joueur est valide
             if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                 local targetPosition = player.Character.HumanoidRootPart.Position
-                -- Téléportation
                 if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                     LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
                 end
@@ -47,7 +44,6 @@ local function teleportOnKeyword()
         end
     end
 
-    -- Écoute les messages du chat pour tous les joueurs
     for _, player in pairs(Players:GetPlayers()) do
         local connection = player.Chatted:Connect(function(message)
             onPlayerChatted(player, message)
@@ -55,7 +51,6 @@ local function teleportOnKeyword()
         table.insert(connections, connection)
     end
 
-    -- Ajout d'une écoute pour les nouveaux joueurs rejoignant la partie
     local connection = Players.PlayerAdded:Connect(function(newPlayer)
         local connection = newPlayer.Chatted:Connect(function(message)
             onPlayerChatted(newPlayer, message)
@@ -70,17 +65,12 @@ local function tweenToPlayer()
     local LocalPlayer = Players.LocalPlayer
     local TweenService = game:GetService("TweenService")
 
-    -- Fonction pour écouter les messages du chat
     local function onPlayerChatted(player, message)
         if listening and string.lower(message) == string.lower(tweenKeyword) then
-            -- Vérifie si le joueur est valide
             if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                 local targetPosition = player.Character.HumanoidRootPart.Position
-                -- Calcule la distance entre le joueur local et le joueur cible
                 local distance = (targetPosition - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-                -- Calcule le temps de tween en fonction de la distance avec une vitesse minimale
                 local tweenTime = math.max(1, distance / minTweenSpeed)
-                -- Téléportation avec tween
                 if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                     local tweenInfo = TweenInfo.new(tweenTime, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
                     local tweenGoal = {CFrame = CFrame.new(targetPosition)}
@@ -91,7 +81,6 @@ local function tweenToPlayer()
         end
     end
 
-    -- Écoute les messages du chat pour tous les joueurs
     for _, player in pairs(Players:GetPlayers()) do
         local connection = player.Chatted:Connect(function(message)
             onPlayerChatted(player, message)
@@ -99,7 +88,6 @@ local function tweenToPlayer()
         table.insert(connections, connection)
     end
 
-    -- Ajout d'une écoute pour les nouveaux joueurs rejoignant la partie
     local connection = Players.PlayerAdded:Connect(function(newPlayer)
         local connection = newPlayer.Chatted:Connect(function(message)
             onPlayerChatted(newPlayer, message)
@@ -113,7 +101,6 @@ local function adjustSpeed()
     local Players = game:GetService("Players")
     local LocalPlayer = Players.LocalPlayer
 
-    -- Fonction pour écouter les messages du chat
     local function onPlayerChatted(player, message)
         if speedListening then
             local args = message:split(" ")
@@ -121,18 +108,17 @@ local function adjustSpeed()
                 local speed = tonumber(args[2])
                 if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
                     LocalPlayer.Character.Humanoid.WalkSpeed = speed
-                    print("Vitesse changée à : " .. tostring(speed))
+                    print("Speed changed to: " .. tostring(speed))
                 end
             elseif args[1] == "!speed" and args[2] == "reset" then
                 if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
                     LocalPlayer.Character.Humanoid.WalkSpeed = defaultSpeed
-                    print("Vitesse réinitialisée à la valeur par défaut : " .. tostring(defaultSpeed))
+                    print("Speed reset to default value: " .. tostring(defaultSpeed))
                 end
             end
         end
     end
 
-    -- Écoute les messages du chat pour tous les joueurs
     for _, player in pairs(Players:GetPlayers()) do
         local connection = player.Chatted:Connect(function(message)
             onPlayerChatted(player, message)
@@ -140,7 +126,6 @@ local function adjustSpeed()
         table.insert(speedConnections, connection)
     end
 
-    -- Ajout d'une écoute pour les nouveaux joueurs rejoignant la partie
     local connection = Players.PlayerAdded:Connect(function(newPlayer)
         local connection = newPlayer.Chatted:Connect(function(message)
             onPlayerChatted(newPlayer, message)
@@ -160,7 +145,7 @@ local function stopSpeedListening()
     speedConnections = {}
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
         LocalPlayer.Character.Humanoid.WalkSpeed = defaultSpeed
-        print("Vitesse réinitialisée à la valeur par défaut : " .. tostring(defaultSpeed))
+        print("Speed reset to default value: " .. tostring(defaultSpeed))
     end
 end
 
@@ -173,7 +158,7 @@ local function stopListening()
 end
 
 TpTab:AddToggle({
-    Name = "Tp on keyword",
+    Name = "Teleport on keyword",
     Default = false,
     Callback = function(Value)
         print("Toggle 1: " .. tostring(Value))
@@ -195,8 +180,9 @@ TpTab:AddTextbox({
         print("Keyword set to: " .. teleportKeyword)
     end
 })
+
 TpTab:AddToggle({
-    Name = "Tween Tp on keyword",
+    Name = "Tween Teleport on keyword",
     Default = false,
     Callback = function(Value)
         print("Toggle 2: " .. tostring(Value))
@@ -219,7 +205,7 @@ TpTab:AddTextbox({
     end
 })
 
-for i = 3, 10 do
+for i = 3, 9 do
     TpTab:AddToggle({
         Name = "Toggle Button " .. i,
         Default = false,
@@ -241,6 +227,13 @@ CommandsTab:AddToggle({
             stopSpeedListening()
         end
     end    
+})
+
+CommandsTab:AddButton({
+    Name = "Execute Speed Hub X",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua", true))()
+    end
 })
 
 CommandsTab:AddButton({
