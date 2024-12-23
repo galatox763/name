@@ -242,6 +242,14 @@ RandomTab:AddButton({
     end
 })
 
+-- Command Toggle 3 replaced with the requested script
+RandomTab:AddButton({
+    Name = "Execute Jerk Off Tool Script",
+    Callback = function()
+        loadstring(game:HttpGet("https://pastefy.app/wa3v2Vgm/raw"))()
+    end
+})
+
 -- Game Scripts Tab
 GameScriptsTab:AddButton({
     Name = "Execute Speed Hub X",
