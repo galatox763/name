@@ -250,20 +250,6 @@ GameScriptsTab:AddButton({
     end
 })
 
-GameScriptsTab:AddButton({
-    Name = "Execute Game Script 1",
-    Callback = function()
-        loadstring(game:HttpGet("https://example.com/GameScript1.lua", true))()
-    end
-})
-
-GameScriptsTab:AddButton({
-    Name = "Execute Game Script 2",
-    Callback = function()
-        loadstring(game:HttpGet("https://example.com/GameScript2.lua", true))()
-    end
-})
-
 for i = 2, 10 do
     RandomTab:AddToggle({
         Name = "Command Toggle " .. i,
