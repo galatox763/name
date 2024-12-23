@@ -7,8 +7,14 @@ local TpTab = Window:MakeTab({
     PremiumOnly = false
 })
 
-local CommandsTab = Window:MakeTab({
-    Name = "Commands",
+local RandomTab = Window:MakeTab({
+    Name = "Random",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+local GameScriptsTab = Window:MakeTab({
+    Name = "Game Scripts",
     Icon = "rbxassetid://4483345998",
     PremiumOnly = false
 })
@@ -215,7 +221,7 @@ for i = 3, 9 do
     })
 end
 
-CommandsTab:AddToggle({
+RandomTab:AddToggle({
     Name = "!speed [number] / !speed reset",
     Default = false,
     Callback = function(Value)
@@ -229,22 +235,37 @@ CommandsTab:AddToggle({
     end    
 })
 
-CommandsTab:AddButton({
-    Name = "Execute Speed Hub X",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua", true))()
-    end
-})
-
-CommandsTab:AddButton({
+RandomTab:AddButton({
     Name = "Lunar Bot Chat AI",
     Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/probablYnicKxD/ProjectLunar/main/LunarBot/Source.lua"))()
     end
 })
 
+-- Game Scripts Tab
+GameScriptsTab:AddButton({
+    Name = "Execute Speed Hub X",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua", true))()
+    end
+})
+
+GameScriptsTab:AddButton({
+    Name = "Execute Game Script 1",
+    Callback = function()
+        loadstring(game:HttpGet("https://example.com/GameScript1.lua", true))()
+    end
+})
+
+GameScriptsTab:AddButton({
+    Name = "Execute Game Script 2",
+    Callback = function()
+        loadstring(game:HttpGet("https://example.com/GameScript2.lua", true))()
+    end
+})
+
 for i = 2, 10 do
-    CommandsTab:AddToggle({
+    RandomTab:AddToggle({
         Name = "Command Toggle " .. i,
         Default = false,
         Callback = function(Value)
