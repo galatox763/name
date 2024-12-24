@@ -590,7 +590,13 @@ RandomTab:AddButton({
         loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
     end
 })
-
+-- Add Universe Viewer button to Random tab
+RandomTab:AddButton({
+    Name = "Universe Viewer",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/ltseverydayyou/uuuuuuu/main/Universe%20Viewer"))();
+    end
+})
 -- Additional command toggles in the Random tab
 for i = 2, 10 do
     RandomTab:AddToggle({
