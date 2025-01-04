@@ -3,6 +3,64 @@ local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shl
 local Window = OrionLib:MakeWindow({Name = "ZlyzoxX's Hub", HidePremium = false, SaveConfig = true, ConfigFolder = "OrionTest"})
 
 -- Create tabs for the GUI
+local MainTab = Window:MakeTab({
+    Name = "🏠 Main",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+MainTab:AddButton({
+    Name = "🎀Reset🎀",
+    Callback = function()
+        local player = game.Players.LocalPlayer
+        if player and player.Character then
+            player.Character:BreakJoints()
+            OrionLib:MakeNotification({
+                Name = "Character Reset",
+                Content = "Your character has been reset",
+                Image = "rbxassetid://4483345998",
+                Time = 3
+            })
+        end
+    end
+})
+
+MainTab:AddButton({
+    Name = "Button 2",
+    Callback = function()
+        OrionLib:MakeNotification({
+            Name = "Button 2",
+            Content = "You clicked Button 2",
+            Image = "rbxassetid://4483345998",
+            Time = 3
+        })
+    end
+})
+
+MainTab:AddButton({
+    Name = "Button 3",
+    Callback = function()
+        OrionLib:MakeNotification({
+            Name = "Button 3",
+            Content = "You clicked Button 3",
+            Image = "rbxassetid://4483345998",
+            Time = 3
+        })
+    end
+})
+
+MainTab:AddButton({
+    Name = "Button 4",
+    Callback = function()
+        OrionLib:MakeNotification({
+            Name = "Button 4",
+            Content = "You clicked Button 4",
+            Image = "rbxassetid://4483345998",
+            Time = 3
+        })
+    end
+})
+
 local TpTab = Window:MakeTab({
     Name = "Tp utilities",
     Icon = "rbxassetid://4483345998",
