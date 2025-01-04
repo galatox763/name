@@ -327,6 +327,12 @@ end
 local autoClickMilk = false
 local autoEquipDropMilk = false
 
+--[[
+    =====================
+    MILK FUNCTIONS
+    =====================
+]]
+
 -- Auto Click Milk Function
 local function autoClickMilkFunc()
     local clickDetector = nil
@@ -396,7 +402,12 @@ local function autoEquipDropMilkFunc()
     end
 end
 
-DaycareTab:AddToggle({
+-- Milk Section
+local MilkSection = DaycareTab:AddSection({
+    Name = "🥛 MILK 🥛"
+})
+
+MilkSection:AddToggle({
     Name = "Auto Click Milk",
     Default = false,
     Callback = function(Value)
@@ -411,7 +422,7 @@ DaycareTab:AddToggle({
     end
 })
 
-DaycareTab:AddToggle({
+MilkSection:AddToggle({
     Name = "Auto Equip & Drop Milk",
     Default = false,
     Callback = function(Value)
