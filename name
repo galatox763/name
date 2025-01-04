@@ -325,13 +325,9 @@ end
 
 -- Daycare Tab Milk Automation
 local autoClickMilk = false
+local milkAutoClickSpeed = 0.1
 local autoEquipDropMilk = false
-
---[[
-    =====================
-    MILK FUNCTIONS
-    =====================
-]]
+local milkEquipDropSpeed = 0.1
 
 -- Auto Click Milk Function
 local function autoClickMilkFunc()
@@ -414,9 +410,14 @@ MilkSection:AddToggle({
         autoClickMilk = Value
         
         spawn(function()
-            while autoClickMilk do
+            local isRunning = true
+            while isRunning do
+                if not autoClickMilk then
+                    isRunning = false
+                    break
+                end
                 autoClickMilkFunc()
-                wait(0.1)
+                wait(milkAutoClickSpeed)
             end
         end)
     end
@@ -429,6 +430,17 @@ MilkSection:AddButton({
     end
 })
 
+MilkSection:AddSlider({
+    Name = "Auto Click Speed",
+    Min = 0.01,
+    Max = 1,
+    Increment = 0.01,
+    Default = 0.1,
+    Callback = function(Value)
+        milkAutoClickSpeed = Value
+    end
+})
+
 MilkSection:AddToggle({
     Name = "Auto Equip & Drop Milk",
     Default = false,
@@ -436,9 +448,14 @@ MilkSection:AddToggle({
         autoEquipDropMilk = Value
         
         spawn(function()
-            while autoEquipDropMilk do
+            local isRunning = true
+            while isRunning do
+                if not autoEquipDropMilk then
+                    isRunning = false
+                    break
+                end
                 autoEquipDropMilkFunc()
-                wait(0.1)
+                wait(milkEquipDropSpeed)
             end
         end)
     end
@@ -451,11 +468,23 @@ MilkSection:AddButton({
     end
 })
 
+MilkSection:AddSlider({
+    Name = "Equip & Drop Speed",
+    Min = 0.01,
+    Max = 1,
+    Increment = 0.01,
+    Default = 0.1,
+    Callback = function(Value)
+        milkEquipDropSpeed = Value
+    end
+})
+
 -- Auto Click Functions for Various ClickDetectors
 local autoClickPopsicle = false
 local autoClickSandwich = false
 local autoClickMedKit = false
 local autoClickStar = false
+local clickDetectorAutoClickSpeed = 0.1
 
 --[[
     =====================
@@ -601,7 +630,7 @@ ClickDetectorSection:AddToggle({
         spawn(function()
             while autoClickPopsicle do
                 autoClickPopsicleFunc()
-                wait(0.1)
+                wait(clickDetectorAutoClickSpeed)
             end
         end)
     end
@@ -623,7 +652,7 @@ ClickDetectorSection:AddToggle({
         spawn(function()
             while autoClickSandwich do
                 autoClickSandwichFunc()
-                wait(0.1)
+                wait(clickDetectorAutoClickSpeed)
             end
         end)
     end
@@ -645,7 +674,7 @@ ClickDetectorSection:AddToggle({
         spawn(function()
             while autoClickMedKit do
                 autoClickMedKitFunc()
-                wait(0.1)
+                wait(clickDetectorAutoClickSpeed)
             end
         end)
     end
@@ -667,7 +696,7 @@ ClickDetectorSection:AddToggle({
         spawn(function()
             while autoClickStar do
                 autoClickStarFunc()
-                wait(0.1)
+                wait(clickDetectorAutoClickSpeed)
             end
         end)
     end
@@ -680,27 +709,86 @@ ClickDetectorSection:AddButton({
     end
 })
 
+ClickDetectorSection:AddSlider({
+    Name = "Auto Click Speed",
+    Min = 0.01,
+    Max = 1,
+    Increment = 0.01,
+    Default = 0.1,
+    Callback = function(Value)
+        clickDetectorAutoClickSpeed = Value
+    end
+})
+
 -- Become Scientist Variables
 local autoClickScientist = false
 local scientistAutoClickSpeed = 0.1
 
--- Become Scientist Function
-local function autoClickScientistFunc()
-    local clickDetector = nil
+-- Function to find Become Scientist button
+local function findBecomeScientistButton()
+    local workspace = game:GetService("Workspace")
     
-    -- Search entire workspace for Scientist ClickDetector
-    for _, v in pairs(workspace:GetDescendants()) do
-        if v:IsA("ClickDetector") and 
-           (string.lower(v.Parent.Name):find("scientist") or 
-            string.lower(v.Parent.Parent.Name):find("scientist")) then
-            clickDetector = v
-            break
+    -- Look for the button or timer
+    for _, obj in pairs(workspace:GetDescendants()) do
+        -- Debug: Print all objects being checked
+        print("Checking object: " .. tostring(obj.Name) .. " (Parent: " .. tostring(obj.Parent and obj.Parent.Name or "nil") .. ")")
+        
+        -- Check for the button with more flexible matching
+        if string.lower(obj.Name):find("becomescientistbutton") then
+            print("Found potential BecomeScientistButton")
+            
+            -- Try multiple ways to find the ClickDetector
+            local clickDetector = 
+                obj:FindFirstChildOfClass("ClickDetector") or  -- Direct ClickDetector
+                (obj:FindFirstChild("Button") and obj:FindFirstChild("Button"):FindFirstChildOfClass("ClickDetector")) or  -- Button child
+                nil
+            
+            if clickDetector then
+                print("Found ClickDetector: " .. tostring(clickDetector))
+                return clickDetector
+            else
+                print("No ClickDetector found")
+            end
+        end
+        
+        -- Check for timer text
+        if obj:IsA("TextLabel") then
+            -- Look for timer-like text
+            local text = obj.Text
+            if string.find(text:lower(), "timer") or 
+               string.match(text, "%d+:%d+") or  -- Matches time format like 5:00
+               string.find(text:lower(), "wait") then
+                print("Timer detected: " .. text)
+                return nil
+            end
         end
     end
     
+    print("No Become Scientist button found")
+    return nil
+end
+
+-- Become Scientist Function
+local function autoClickScientistFunc()
+    local clickDetector = findBecomeScientistButton()
+    
     -- Attempt to click
     if clickDetector then
-        fireclickdetector(clickDetector)
+        print("Attempting to click ClickDetector")
+        
+        -- Multiple click methods
+        pcall(function()
+            clickDetector:MouseClick()
+        end)
+        
+        -- Additional click method
+        if fireclickdetector then
+            pcall(function() 
+                fireclickdetector(clickDetector) 
+            end)
+        end
+    else
+        print("No ClickDetector found to click")
     end
 end
 
@@ -716,8 +804,24 @@ BecomeScientistSection:AddToggle({
         autoClickScientist = Value
         
         spawn(function()
-            while autoClickScientist do
-                autoClickScientistFunc()
+            local isRunning = true
+            while isRunning do
+                if not autoClickScientist then
+                    isRunning = false
+                    break
+                end
+                
+                -- Check if player is in Scientist team
+                local player = game.Players.LocalPlayer
+                local team = player.Team
+                
+                if team and team.Name ~= "Scientists" then
+                    autoClickScientistFunc()
+                else
+                    isRunning = false
+                    break
+                end
+                
                 wait(scientistAutoClickSpeed)
             end
         end)
@@ -739,6 +843,203 @@ BecomeScientistSection:AddSlider({
     Default = 0.1,
     Callback = function(Value)
         scientistAutoClickSpeed = Value
+    end
+})
+
+-- ChalkShelf Item Variables
+local autoClickFireExtinguisher = false
+local autoClickWateringCan = false
+local autoClickTeddi = false
+local autoClickBouncy = false
+
+local chalkShelfAutoClickSpeed = 0.1
+
+-- Auto Click Fire Extinguisher Function
+local function autoClickFireExtinguisherFunc()
+    local clickDetector = nil
+    
+    -- Search entire workspace for Fire Extinguisher ClickDetector
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("ClickDetector") and 
+           (string.lower(v.Parent.Name):find("fire extinguisher") or 
+            string.lower(v.Parent.Parent.Name):find("fire extinguisher")) then
+            clickDetector = v
+            break
+        end
+    end
+    
+    -- Attempt to click
+    if clickDetector then
+        fireclickdetector(clickDetector)
+    end
+end
+
+-- Auto Click Watering Can Function
+local function autoClickWateringCanFunc()
+    local clickDetector = nil
+    
+    -- Search entire workspace for Watering Can ClickDetector
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("ClickDetector") and 
+           (string.lower(v.Parent.Name):find("watering can") or 
+            string.lower(v.Parent.Parent.Name):find("watering can")) then
+            clickDetector = v
+            break
+        end
+    end
+    
+    -- Attempt to click
+    if clickDetector then
+        fireclickdetector(clickDetector)
+    end
+end
+
+-- Auto Click Teddi Function
+local function autoClickTeddiFunc()
+    local clickDetector = nil
+    
+    -- Search entire workspace for Teddi ClickDetector
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("ClickDetector") and 
+           (string.lower(v.Parent.Name):find("teddi") or 
+            string.lower(v.Parent.Parent.Name):find("teddi")) then
+            clickDetector = v
+            break
+        end
+    end
+    
+    -- Attempt to click
+    if clickDetector then
+        fireclickdetector(clickDetector)
+    end
+end
+
+-- Auto Click Bouncy Function
+local function autoClickBouncyFunc()
+    local clickDetector = nil
+    
+    -- Search entire workspace for Bouncy ClickDetector
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("ClickDetector") and 
+           (string.lower(v.Parent.Name):find("bouncy") or 
+            string.lower(v.Parent.Parent.Name):find("bouncy")) then
+            clickDetector = v
+            break
+        end
+    end
+    
+    -- Attempt to click
+    if clickDetector then
+        fireclickdetector(clickDetector)
+    end
+end
+
+-- ChalkShelf Section
+local ChalkShelfSection = DaycareTab:AddSection({
+    Name = "🧪 ChalkShelf Items 🧪"
+})
+
+-- Fire Extinguisher Toggle and Button
+ChalkShelfSection:AddToggle({
+    Name = "Auto Click Fire Extinguisher",
+    Default = false,
+    Callback = function(Value)
+        autoClickFireExtinguisher = Value
+        
+        spawn(function()
+            while autoClickFireExtinguisher do
+                autoClickFireExtinguisherFunc()
+                wait(chalkShelfAutoClickSpeed)
+            end
+        end)
+    end
+})
+
+ChalkShelfSection:AddButton({
+    Name = "Click Fire Extinguisher",
+    Callback = function()
+        autoClickFireExtinguisherFunc()
+    end
+})
+
+-- Watering Can Toggle and Button
+ChalkShelfSection:AddToggle({
+    Name = "Auto Click Watering Can",
+    Default = false,
+    Callback = function(Value)
+        autoClickWateringCan = Value
+        
+        spawn(function()
+            while autoClickWateringCan do
+                autoClickWateringCanFunc()
+                wait(chalkShelfAutoClickSpeed)
+            end
+        end)
+    end
+})
+
+ChalkShelfSection:AddButton({
+    Name = "Click Watering Can",
+    Callback = function()
+        autoClickWateringCanFunc()
+    end
+})
+
+-- Teddi Toggle and Button
+ChalkShelfSection:AddToggle({
+    Name = "Auto Click Teddi",
+    Default = false,
+    Callback = function(Value)
+        autoClickTeddi = Value
+        
+        spawn(function()
+            while autoClickTeddi do
+                autoClickTeddiFunc()
+                wait(chalkShelfAutoClickSpeed)
+            end
+        end)
+    end
+})
+
+ChalkShelfSection:AddButton({
+    Name = "Click Teddi",
+    Callback = function()
+        autoClickTeddiFunc()
+    end
+})
+
+-- Bouncy Toggle and Button
+ChalkShelfSection:AddToggle({
+    Name = "Auto Click Bouncy",
+    Default = false,
+    Callback = function(Value)
+        autoClickBouncy = Value
+        
+        spawn(function()
+            while autoClickBouncy do
+                autoClickBouncyFunc()
+                wait(chalkShelfAutoClickSpeed)
+            end
+        end)
+    end
+})
+
+ChalkShelfSection:AddButton({
+    Name = "Click Bouncy",
+    Callback = function()
+        autoClickBouncyFunc()
+    end
+})
+
+-- ChalkShelf Click Speed Slider
+ChalkShelfSection:AddSlider({
+    Name = "Auto Click Speed",
+    Min = 0.01,
+    Max = 1,
+    Increment = 0.01,
+    Default = 0.1,
+    Callback = function(Value)
+        chalkShelfAutoClickSpeed = Value
     end
 })
 
