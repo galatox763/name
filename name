@@ -724,58 +724,25 @@ ClickDetectorSection:AddSlider({
 local autoClickScientist = false
 local scientistAutoClickSpeed = 0.1
 
--- Function to find Become Scientist button
-local function findBecomeScientistButton()
-    local workspace = game:GetService("Workspace")
+-- Become Scientist Function
+local function autoClickScientistFunc()
+    local clickDetector = nil
     
-    -- Look for the button or timer
-    for _, obj in pairs(workspace:GetDescendants()) do
-        -- Debug: Print all objects being checked
-        print("Checking object: " .. tostring(obj.Name) .. " (Parent: " .. tostring(obj.Parent and obj.Parent.Name or "nil") .. ")")
-        
-        -- Check for the button with more flexible matching
-        if string.lower(obj.Name):find("becomescientistbutton") then
-            print("Found potential BecomeScientistButton")
-            
-            -- Try multiple ways to find the ClickDetector
-            local clickDetector = 
-                obj:FindFirstChildOfClass("ClickDetector") or  -- Direct ClickDetector
-                (obj:FindFirstChild("Button") and obj:FindFirstChild("Button"):FindFirstChildOfClass("ClickDetector")) or  -- Button child
-                nil
-            
-            if clickDetector then
-                print("Found ClickDetector: " .. tostring(clickDetector))
-                return clickDetector
-            else
-                print("No ClickDetector found")
-            end
-        end
-        
-        -- Check for timer text
-        if obj:IsA("TextLabel") then
-            -- Look for timer-like text
-            local text = obj.Text
-            if string.find(text:lower(), "timer") or 
-               string.match(text, "%d+:%d+") or  -- Matches time format like 5:00
-               string.find(text:lower(), "wait") then
-                print("Timer detected: " .. text)
-                return nil
+    -- Search entire workspace for Scientist ClickDetector
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v.Name == "BecomeScientistButton" then
+            local button = v:FindFirstChild("Button")
+            if button then
+                clickDetector = button:FindFirstChildOfClass("ClickDetector")
+                if clickDetector then
+                    break
+                end
             end
         end
     end
     
-    print("No Become Scientist button found")
-    return nil
-end
-
--- Become Scientist Function
-local function autoClickScientistFunc()
-    local clickDetector = findBecomeScientistButton()
-    
     -- Attempt to click
     if clickDetector then
-        print("Attempting to click ClickDetector")
-        
         -- Multiple click methods
         pcall(function()
             clickDetector:MouseClick()
@@ -787,8 +754,6 @@ local function autoClickScientistFunc()
                 fireclickdetector(clickDetector) 
             end)
         end
-    else
-        print("No ClickDetector found to click")
     end
 end
 
