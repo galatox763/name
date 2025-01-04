@@ -422,6 +422,13 @@ MilkSection:AddToggle({
     end
 })
 
+MilkSection:AddButton({
+    Name = "Click Milk",
+    Callback = function()
+        autoClickMilkFunc()
+    end
+})
+
 MilkSection:AddToggle({
     Name = "Auto Equip & Drop Milk",
     Default = false,
@@ -434,6 +441,304 @@ MilkSection:AddToggle({
                 wait(0.1)
             end
         end)
+    end
+})
+
+MilkSection:AddButton({
+    Name = "Equip & Drop Milk",
+    Callback = function()
+        autoEquipDropMilkFunc()
+    end
+})
+
+-- Auto Click Functions for Various ClickDetectors
+local autoClickPopsicle = false
+local autoClickSandwich = false
+local autoClickMedKit = false
+local autoClickStar = false
+
+--[[
+    =====================
+    CLICK DETECTOR FUNCTIONS
+    =====================
+]]
+
+-- Auto Click Popsicle Function
+local function autoClickPopsicleFunc()
+    local clickDetector = nil
+    
+    -- Method 1: Direct path
+    local storeFreezer = workspace:FindFirstChild("Store Freezer")
+    if storeFreezer then
+        local popsicle = storeFreezer:FindFirstChild("Popsicle")
+        if popsicle then
+            clickDetector = popsicle:FindFirstChildOfClass("ClickDetector")
+        end
+    end
+    
+    -- Method 2: Search entire workspace if direct path fails
+    if not clickDetector then
+        for _, v in pairs(workspace:GetDescendants()) do
+            if v:IsA("ClickDetector") and 
+               (string.lower(v.Parent.Name):find("popsicle") or 
+                string.lower(v.Parent.Parent.Name):find("popsicle")) then
+                clickDetector = v
+                break
+            end
+        end
+    end
+    
+    -- Attempt to click
+    if clickDetector then
+        fireclickdetector(clickDetector)
+    end
+end
+
+-- Auto Click Sandwich Function
+local function autoClickSandwichFunc()
+    local clickDetector = nil
+    
+    -- Method 1: Direct path
+    local storeFreezer = workspace:FindFirstChild("Store Freezer")
+    if storeFreezer then
+        local sandwich = storeFreezer:FindFirstChild("Sandwich")
+        if sandwich then
+            clickDetector = sandwich:FindFirstChildOfClass("ClickDetector")
+        end
+    end
+    
+    -- Method 2: Search entire workspace if direct path fails
+    if not clickDetector then
+        for _, v in pairs(workspace:GetDescendants()) do
+            if v:IsA("ClickDetector") and 
+               (string.lower(v.Parent.Name):find("sandwich") or 
+                string.lower(v.Parent.Parent.Name):find("sandwich")) then
+                clickDetector = v
+                break
+            end
+        end
+    end
+    
+    -- Attempt to click
+    if clickDetector then
+        fireclickdetector(clickDetector)
+    end
+end
+
+-- Auto Click Med-Kit Function
+local function autoClickMedKitFunc()
+    local clickDetector = nil
+    
+    -- Method 1: Direct path
+    local chalkShelf = workspace:FindFirstChild("ChalkShelf")
+    if chalkShelf then
+        local medKit = chalkShelf:FindFirstChild("Med-Kit")
+        if medKit then
+            clickDetector = medKit:FindFirstChildOfClass("ClickDetector")
+        end
+    end
+    
+    -- Method 2: Search entire workspace if direct path fails
+    if not clickDetector then
+        for _, v in pairs(workspace:GetDescendants()) do
+            if v:IsA("ClickDetector") and 
+               (string.lower(v.Parent.Name):find("med[-]?kit") or 
+                string.lower(v.Parent.Parent.Name):find("med[-]?kit")) then
+                clickDetector = v
+                break
+            end
+        end
+    end
+    
+    -- Attempt to click
+    if clickDetector then
+        fireclickdetector(clickDetector)
+    end
+end
+
+-- Auto Click Star Function
+local function autoClickStarFunc()
+    local clickDetector = nil
+    
+    -- Method 1: Direct path
+    local chalkShelf = workspace:FindFirstChild("ChalkShelf")
+    if chalkShelf then
+        local star = chalkShelf:FindFirstChild("Star")
+        if star then
+            clickDetector = star:FindFirstChildOfClass("ClickDetector")
+        end
+    end
+    
+    -- Method 2: Search entire workspace if direct path fails
+    if not clickDetector then
+        for _, v in pairs(workspace:GetDescendants()) do
+            if v:IsA("ClickDetector") and 
+               (string.lower(v.Parent.Name):find("star") or 
+                string.lower(v.Parent.Parent.Name):find("star")) then
+                clickDetector = v
+                break
+            end
+        end
+    end
+    
+    -- Attempt to click
+    if clickDetector then
+        fireclickdetector(clickDetector)
+    end
+end
+
+-- Click Detector Section
+local ClickDetectorSection = DaycareTab:AddSection({
+    Name = "🎯 CLICK DETECTORS 🎯"
+})
+
+ClickDetectorSection:AddToggle({
+    Name = "Auto Click Popsicle",
+    Default = false,
+    Callback = function(Value)
+        autoClickPopsicle = Value
+        
+        spawn(function()
+            while autoClickPopsicle do
+                autoClickPopsicleFunc()
+                wait(0.1)
+            end
+        end)
+    end
+})
+
+ClickDetectorSection:AddButton({
+    Name = "Click Popsicle",
+    Callback = function()
+        autoClickPopsicleFunc()
+    end
+})
+
+ClickDetectorSection:AddToggle({
+    Name = "Auto Click Sandwich",
+    Default = false,
+    Callback = function(Value)
+        autoClickSandwich = Value
+        
+        spawn(function()
+            while autoClickSandwich do
+                autoClickSandwichFunc()
+                wait(0.1)
+            end
+        end)
+    end
+})
+
+ClickDetectorSection:AddButton({
+    Name = "Click Sandwich",
+    Callback = function()
+        autoClickSandwichFunc()
+    end
+})
+
+ClickDetectorSection:AddToggle({
+    Name = "Auto Click Med-Kit",
+    Default = false,
+    Callback = function(Value)
+        autoClickMedKit = Value
+        
+        spawn(function()
+            while autoClickMedKit do
+                autoClickMedKitFunc()
+                wait(0.1)
+            end
+        end)
+    end
+})
+
+ClickDetectorSection:AddButton({
+    Name = "Click Med-Kit",
+    Callback = function()
+        autoClickMedKitFunc()
+    end
+})
+
+ClickDetectorSection:AddToggle({
+    Name = "Auto Click Star",
+    Default = false,
+    Callback = function(Value)
+        autoClickStar = Value
+        
+        spawn(function()
+            while autoClickStar do
+                autoClickStarFunc()
+                wait(0.1)
+            end
+        end)
+    end
+})
+
+ClickDetectorSection:AddButton({
+    Name = "Click Star",
+    Callback = function()
+        autoClickStarFunc()
+    end
+})
+
+-- Become Scientist Variables
+local autoClickScientist = false
+local scientistAutoClickSpeed = 0.1
+
+-- Become Scientist Function
+local function autoClickScientistFunc()
+    local clickDetector = nil
+    
+    -- Search entire workspace for Scientist ClickDetector
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("ClickDetector") and 
+           (string.lower(v.Parent.Name):find("scientist") or 
+            string.lower(v.Parent.Parent.Name):find("scientist")) then
+            clickDetector = v
+            break
+        end
+    end
+    
+    -- Attempt to click
+    if clickDetector then
+        fireclickdetector(clickDetector)
+    end
+end
+
+-- Become Scientist Section
+local BecomeScientistSection = DaycareTab:AddSection({
+    Name = "🔥 Become Scientist 🔥"
+})
+
+BecomeScientistSection:AddToggle({
+    Name = "Auto Click Scientist",
+    Default = false,
+    Callback = function(Value)
+        autoClickScientist = Value
+        
+        spawn(function()
+            while autoClickScientist do
+                autoClickScientistFunc()
+                wait(scientistAutoClickSpeed)
+            end
+        end)
+    end
+})
+
+BecomeScientistSection:AddButton({
+    Name = "Click Scientist",
+    Callback = function()
+        autoClickScientistFunc()
+    end
+})
+
+BecomeScientistSection:AddSlider({
+    Name = "Auto Click Speed",
+    Min = 0.01,
+    Max = 1,
+    Increment = 0.01,
+    Default = 0.1,
+    Callback = function(Value)
+        scientistAutoClickSpeed = Value
     end
 })
 
