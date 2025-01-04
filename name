@@ -25,39 +25,83 @@ MainTab:AddButton({
     end
 })
 
-MainTab:AddButton({
-    Name = "Button 2",
-    Callback = function()
-        OrionLib:MakeNotification({
-            Name = "Button 2",
-            Content = "You clicked Button 2",
-            Image = "rbxassetid://4483345998",
-            Time = 3
-        })
-    end
-})
+-- Discord Webhook Functions
+function SendMessage(url, message)
+    local http = game:GetService("HttpService")
+    local headers = {
+        ["Content-Type"] = "application/json"
+    }
+    local data = {
+        ["content"] = message
+    }
+    local body = http:JSONEncode(data)
+    local response = request({
+        Url = url,
+        Method = "POST",
+        Headers = headers,
+        Body = body
+    })
+    print("Sent")
+end
 
-MainTab:AddButton({
-    Name = "Button 3",
-    Callback = function()
-        OrionLib:MakeNotification({
-            Name = "Button 3",
-            Content = "You clicked Button 3",
-            Image = "rbxassetid://4483345998",
-            Time = 3
-        })
-    end
-})
+function SendMessageEMBED(url, embed)
+    local http = game:GetService("HttpService")
+    local headers = {
+        ["Content-Type"] = "application/json"
+    }
+    local data = {
+        ["embeds"] = {
+            {
+                ["title"] = embed.title,
+                ["description"] = embed.description,
+                ["color"] = embed.color,
+                ["fields"] = embed.fields,
+                ["footer"] = {
+                    ["text"] = embed.footer.text
+                }
+            }
+        }
+    }
+    local body = http:JSONEncode(data)
+    local response = request({
+        Url = url,
+        Method = "POST",
+        Headers = headers,
+        Body = body
+    })
+    print("Sent")
+end
 
-MainTab:AddButton({
-    Name = "Button 4",
-    Callback = function()
-        OrionLib:MakeNotification({
-            Name = "Button 4",
-            Content = "You clicked Button 4",
-            Image = "rbxassetid://4483345998",
-            Time = 3
-        })
+-- Add Bug Report Textbox to Main Tab
+MainTab:AddTextbox({
+    Name = "Report Bugs",
+    Default = "",
+    TextDisappear = false,
+    Callback = function(Value)
+        if Value and Value ~= "" then
+            -- Get player information
+            local player = game.Players.LocalPlayer
+            local playerName = player and player.Name or "Unknown Player"
+            
+            -- Webhook URL
+            local webhookUrl = "https://discord.com/api/webhooks/1325242945569292460/ibx-X6vKnOo917T63vMSJl0zU3UfD5tktmDfpcFGa5gqR17HQG49sUygsn6_vORDIbiW"
+            
+            -- Send simple message
+            local fullMessage = string.format("**Bug Report**\nPlayer: %s\nMessage: %s", playerName, Value)
+            
+            -- Attempt to send
+            pcall(function()
+                SendMessage(webhookUrl, fullMessage)
+                
+                -- Notification
+                OrionLib:MakeNotification({
+                    Name = "Bug Report",
+                    Content = "Bug report sent successfully!",
+                    Image = "rbxassetid://4483345998",
+                    Time = 3
+                })
+            end)
+        end
     end
 })
 
@@ -83,6 +127,55 @@ local DaycareTab = Window:MakeTab({
     Name = "Daycare",
     Icon = "rbxassetid://4483345998",
     PremiumOnly = false
+})
+
+DaycareTab:AddToggle({
+    Name = "Anti-Grab",
+    Default = false,
+    Callback = function(Value)
+        local player = game.Players.LocalPlayer
+        local antiGrabConnection
+        local lastCheckTime = 0
+        
+        if Value then
+            antiGrabConnection = game:GetService("RunService").Heartbeat:Connect(function()
+                local currentTime = tick()
+                if currentTime - lastCheckTime < 0.7 then return end
+                
+                if player and player.Character then
+                    -- Search through entire workspace for potential ropes
+                    local function searchForRopes(parent)
+                        for _, child in ipairs(parent:GetDescendants()) do
+                            -- Check for various rope-like objects
+                            if child.Name:lower():find("rope") or 
+                               child.Name:lower():find("cable") or 
+                               child:IsA("Constraint") then
+                                -- Try to find connection to player
+                                local success, err = pcall(function()
+                                    -- Check if the rope is somehow connected to the player
+                                    if child:IsDescendantOf(player.Character) or 
+                                       player.Character:IsDescendantOf(child) then
+                                        player.Character:BreakJoints()
+                                    end
+                                end)
+                            end
+                        end
+                    end
+                    
+                    -- Search workspace and character for ropes
+                    searchForRopes(workspace)
+                    searchForRopes(player.Character)
+                    
+                    lastCheckTime = currentTime
+                end
+            end)
+        else
+            -- Disconnect the connection when toggle is turned off
+            if antiGrabConnection then
+                antiGrabConnection:Disconnect()
+            end
+        end
+    end
 })
 
 -- Variables for teleportation and speed adjustment
@@ -280,17 +373,6 @@ TpTab:AddTextbox({
     end
 })
 
--- Additional toggle buttons in the teleportation tab
-for i = 3, 9 do
-    TpTab:AddToggle({
-        Name = "Toggle Button " .. i,
-        Default = false,
-        Callback = function(Value)
-            print("Toggle " .. i .. ": " .. tostring(Value))
-        end    
-    })
-end
-
 -- Toggle for speed adjustment commands
 RandomTab:AddToggle({
     Name = "!speed [number] / !speed reset",
@@ -370,92 +452,6 @@ RandomTab:AddButton({
     end
 })
 
--- Additional command toggles in the Random tab
-for i = 2, 10 do
-    RandomTab:AddToggle({
-        Name = "Command Toggle " .. i,
-        Default = false,
-        Callback = function(Value)
-            print("Command Toggle " .. i .. ": " .. tostring(Value))
-        end    
-    })
-end
-
--- Daycare Tab Milk Automation
-local autoClickMilk = false
-local milkAutoClickSpeed = 0.1
-local autoEquipDropMilk = false
-local milkEquipDropSpeed = 0.1
-
--- Auto Click Milk Function
-local function autoClickMilkFunc()
-    local clickDetector = nil
-    
-    -- Method 1: Direct path
-    local storeFreezer = workspace:FindFirstChild("Store Freezer")
-    if storeFreezer then
-        local milk = storeFreezer:FindFirstChild("Milk")
-        if milk then
-            clickDetector = milk:FindFirstChildOfClass("ClickDetector")
-        end
-    end
-    
-    -- Method 2: Search entire workspace if direct path fails
-    if not clickDetector then
-        for _, v in pairs(workspace:GetDescendants()) do
-            if v:IsA("ClickDetector") and 
-               (string.lower(v.Parent.Name):find("milk") or 
-                string.lower(v.Parent.Parent.Name):find("milk")) then
-                clickDetector = v
-                break
-            end
-        end
-    end
-    
-    -- Attempt to click
-    if clickDetector then
-        fireclickdetector(clickDetector)
-    end
-end
-
--- Auto Equip and Drop Milk Function
-local function autoEquipDropMilkFunc()
-    local player = game.Players.LocalPlayer
-    local backpack = player.Backpack
-    local character = player.Character
-    
-    -- Check both backpack and character for milk tools
-    local function dropMilkTool(tool)
-        -- Unequip current tool if any
-        local currentTool = character:FindFirstChildWhichIsA("Tool")
-        if currentTool then
-            currentTool.Parent = backpack
-        end
-        
-        -- Equip milk tool
-        tool.Parent = character
-        
-        -- Immediately drop the milk tool
-        tool.Parent = workspace
-    end
-    
-    -- Check backpack
-    for _, tool in pairs(backpack:GetChildren()) do
-        if string.lower(tool.Name):find("milk") then
-            dropMilkTool(tool)
-            break
-        end
-    end
-    
-    -- Check character (in case milk was picked up)
-    for _, tool in pairs(character:GetChildren()) do
-        if string.lower(tool.Name):find("milk") then
-            dropMilkTool(tool)
-            break
-        end
-    end
-end
-
 -- Milk Section
 local MilkSection = DaycareTab:AddSection({
     Name = "🥛 MILK 🥛"
@@ -465,7 +461,7 @@ MilkSection:AddToggle({
     Name = "Auto Click Milk",
     Default = false,
     Callback = function(Value)
-        autoClickMilk = Value
+        local autoClickMilk = Value
         
         spawn(function()
             local isRunning = true
@@ -474,8 +470,34 @@ MilkSection:AddToggle({
                     isRunning = false
                     break
                 end
-                autoClickMilkFunc()
-                wait(milkAutoClickSpeed)
+                local clickDetector = nil
+                
+                -- Method 1: Direct path
+                local storeFreezer = workspace:FindFirstChild("Store Freezer")
+                if storeFreezer then
+                    local milk = storeFreezer:FindFirstChild("Milk")
+                    if milk then
+                        clickDetector = milk:FindFirstChildOfClass("ClickDetector")
+                    end
+                end
+                
+                -- Method 2: Search entire workspace if direct path fails
+                if not clickDetector then
+                    for _, v in pairs(workspace:GetDescendants()) do
+                        if v:IsA("ClickDetector") and 
+                           (string.lower(v.Parent.Name):find("milk") or 
+                            string.lower(v.Parent.Parent.Name):find("milk")) then
+                            clickDetector = v
+                            break
+                        end
+                    end
+                end
+                
+                -- Attempt to click
+                if clickDetector then
+                    fireclickdetector(clickDetector)
+                end
+                wait(0.1)
             end
         end)
     end
@@ -484,18 +506,33 @@ MilkSection:AddToggle({
 MilkSection:AddButton({
     Name = "Click Milk",
     Callback = function()
-        autoClickMilkFunc()
-    end
-})
-
-MilkSection:AddSlider({
-    Name = "Auto Click Speed",
-    Min = 0.01,
-    Max = 1,
-    Increment = 0.01,
-    Default = 0.1,
-    Callback = function(Value)
-        milkAutoClickSpeed = Value
+        local clickDetector = nil
+        
+        -- Method 1: Direct path
+        local storeFreezer = workspace:FindFirstChild("Store Freezer")
+        if storeFreezer then
+            local milk = storeFreezer:FindFirstChild("Milk")
+            if milk then
+                clickDetector = milk:FindFirstChildOfClass("ClickDetector")
+            end
+        end
+        
+        -- Method 2: Search entire workspace if direct path fails
+        if not clickDetector then
+            for _, v in pairs(workspace:GetDescendants()) do
+                if v:IsA("ClickDetector") and 
+                   (string.lower(v.Parent.Name):find("milk") or 
+                    string.lower(v.Parent.Parent.Name):find("milk")) then
+                    clickDetector = v
+                    break
+                end
+            end
+        end
+        
+        -- Attempt to click
+        if clickDetector then
+            fireclickdetector(clickDetector)
+        end
     end
 })
 
@@ -503,7 +540,7 @@ MilkSection:AddToggle({
     Name = "Auto Equip & Drop Milk",
     Default = false,
     Callback = function(Value)
-        autoEquipDropMilk = Value
+        local autoEquipDropMilk = Value
         
         spawn(function()
             local isRunning = true
@@ -512,8 +549,41 @@ MilkSection:AddToggle({
                     isRunning = false
                     break
                 end
-                autoEquipDropMilkFunc()
-                wait(milkEquipDropSpeed)
+                local player = game.Players.LocalPlayer
+                local backpack = player.Backpack
+                local character = player.Character
+                
+                -- Check both backpack and character for milk tools
+                local function dropMilkTool(tool)
+                    -- Unequip current tool if any
+                    local currentTool = character:FindFirstChildWhichIsA("Tool")
+                    if currentTool then
+                        currentTool.Parent = backpack
+                    end
+                    
+                    -- Equip milk tool
+                    tool.Parent = character
+                    
+                    -- Immediately drop the milk tool
+                    tool.Parent = workspace
+                end
+                
+                -- Check backpack
+                for _, tool in pairs(backpack:GetChildren()) do
+                    if string.lower(tool.Name):find("milk") then
+                        dropMilkTool(tool)
+                        break
+                    end
+                end
+                
+                -- Check character (in case milk was picked up)
+                for _, tool in pairs(character:GetChildren()) do
+                    if string.lower(tool.Name):find("milk") then
+                        dropMilkTool(tool)
+                        break
+                    end
+                end
+                wait(0.1)
             end
         end)
     end
@@ -522,18 +592,40 @@ MilkSection:AddToggle({
 MilkSection:AddButton({
     Name = "Equip & Drop Milk",
     Callback = function()
-        autoEquipDropMilkFunc()
-    end
-})
-
-MilkSection:AddSlider({
-    Name = "Equip & Drop Speed",
-    Min = 0.01,
-    Max = 1,
-    Increment = 0.01,
-    Default = 0.1,
-    Callback = function(Value)
-        milkEquipDropSpeed = Value
+        local player = game.Players.LocalPlayer
+        local backpack = player.Backpack
+        local character = player.Character
+        
+        -- Check both backpack and character for milk tools
+        local function dropMilkTool(tool)
+            -- Unequip current tool if any
+            local currentTool = character:FindFirstChildWhichIsA("Tool")
+            if currentTool then
+                currentTool.Parent = backpack
+            end
+            
+            -- Equip milk tool
+            tool.Parent = character
+            
+            -- Immediately drop the milk tool
+            tool.Parent = workspace
+        end
+        
+        -- Check backpack
+        for _, tool in pairs(backpack:GetChildren()) do
+            if string.lower(tool.Name):find("milk") then
+                dropMilkTool(tool)
+                break
+            end
+        end
+        
+        -- Check character (in case milk was picked up)
+        for _, tool in pairs(character:GetChildren()) do
+            if string.lower(tool.Name):find("milk") then
+                dropMilkTool(tool)
+                break
+            end
+        end
     end
 })
 
