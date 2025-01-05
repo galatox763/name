@@ -1249,6 +1249,145 @@ ChalkShelfSection:AddSlider({
     end
 })
 
+-- Multi-Player Grab Functionality
+local function createMultiPlayerGrabber(section)
+    -- Store selected players
+    local selectedPlayers = {}
+    
+    -- Create a dropdown for player selection
+    local playerDropdown = section:AddDropdown({
+        Name = "🎯 Select Players to Grab",
+        Options = {"Loading players..."},
+        Default = "Loading players...",
+        Callback = function(selectedPlayerName)
+            if selectedPlayerName == "" or selectedPlayerName == "Loading players..." then return end
+            
+            -- Toggle player selection
+            if selectedPlayers[selectedPlayerName] then
+                selectedPlayers[selectedPlayerName] = nil
+            else
+                selectedPlayers[selectedPlayerName] = true
+            end
+            
+            -- Update dropdown text to show selected players
+            local selectionText = "Selected: " .. (next(selectedPlayers) and 
+                table.concat(vim.tbl_keys(selectedPlayers), ", ") or "None")
+            playerDropdown:Set(selectionText)
+        end
+    })
+    
+    -- Function to update player list
+    local function updatePlayerList()
+        local playerNames = {}
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player ~= game.Players.LocalPlayer then
+                table.insert(playerNames, player.Name)
+            end
+        end
+        
+        -- Sort player names
+        table.sort(playerNames)
+        
+        -- If players exist, update dropdown
+        if #playerNames > 0 then
+            playerDropdown.Options = playerNames
+            playerDropdown:Set(playerNames[1])
+        else
+            playerDropdown.Options = {"No other players"}
+            playerDropdown:Set("No other players")
+        end
+    end
+    
+    -- Continuous player list update
+    game.Players.PlayerAdded:Connect(updatePlayerList)
+    game.Players.PlayerRemoving:Connect(updatePlayerList)
+    
+    -- Initial update
+    updatePlayerList()
+    
+    -- Periodic refresh
+    spawn(function()
+        while true do
+            wait(5)
+            updatePlayerList()
+        end
+    end)
+    
+    -- Grab button remains the same as in previous implementation
+    section:AddButton({
+        Name = "🤲 Grab Selected Players",
+        Callback = function()
+            local player = game.Players.LocalPlayer
+            local character = player.Character or player.CharacterAdded:Wait()
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            
+            if not rootPart then return end
+            
+            -- Store initial position
+            local initialPosition = rootPart.CFrame
+            
+            -- Function to grab a player
+            local function grabPlayer(targetPlayerName)
+                local targetPlayer = game.Players:FindFirstChild(targetPlayerName)
+                if not targetPlayer then return end
+                
+                local targetCharacter = targetPlayer.Character
+                if not targetCharacter then return end
+                
+                local targetRootPart = targetCharacter:FindFirstChild("HumanoidRootPart")
+                if not targetRootPart then return end
+                
+                -- Equip snatch
+                local snatchTool = character:FindFirstChild("Snatch")
+                if not snatchTool then
+                    for _, tool in ipairs(player.Backpack:GetChildren()) do
+                        if tool.Name == "Snatch" then
+                            tool.Parent = character
+                            break
+                        end
+                    end
+                end
+                
+                -- Teleport to player
+                rootPart.CFrame = targetRootPart.CFrame * CFrame.new(0, 0, 3)
+                
+                -- Wait a moment
+                wait(0.5)
+                
+                -- Attempt to snatch
+                local snatch = character:FindFirstChild("Snatch")
+                if snatch then
+                    local clickDetector = snatch:FindFirstChildOfClass("ClickDetector")
+                    if clickDetector then
+                        fireclickdetector(clickDetector)
+                    end
+                end
+                
+                -- Wait a moment
+                wait(0.5)
+                
+                -- Return to initial position
+                rootPart.CFrame = initialPosition
+            end
+            
+            -- Grab all selected players
+            for playerName, _ in pairs(selectedPlayers) do
+                grabPlayer(playerName)
+                wait(1)  -- Small delay between grabs
+            end
+            
+            -- Clear selection
+            selectedPlayers = {}
+            playerDropdown:Set("")
+        end
+    })
+end
+
+-- Add to Daycare Tab
+createMultiPlayerGrabber(DaycareTab:AddSection({
+    Name = "🏃‍♂️ Player Grabber"
+}))
+
 -- Universal Toggle Loop Management
 local function createToggleableLoop(toggleFunction, loopFunction, options)
     options = options or {}
