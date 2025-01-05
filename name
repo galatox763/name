@@ -195,6 +195,70 @@ pcall(function()
     addBreakLoopsButton(MainTab)
 end)
 
+-- Modify Orion Library Tab Creation to Include Search
+local originalAddTab = OrionLib.AddTab
+OrionLib.AddTab = function(self, Config)
+    local tab = originalAddTab(self, Config)
+    
+    -- Create search box
+    local searchBox = Instance.new("TextBox")
+    searchBox.Name = "SearchBox"
+    searchBox.Size = UDim2.new(1, -20, 0, 35)
+    searchBox.Position = UDim2.new(0, 10, 0, 10)
+    searchBox.PlaceholderText = "🔍 Search functions..."
+    searchBox.Text = ""
+    searchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    searchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    searchBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+    searchBox.BorderSizePixel = 0
+    searchBox.Font = Enum.Font.Gotham
+    searchBox.TextSize = 14
+    
+    -- Rounded corners
+    local uiCorner = Instance.new("UICorner")
+    uiCorner.CornerRadius = UDim.new(0.2, 0)
+    uiCorner.Parent = searchBox
+    
+    -- Find the scrolling frame in the tab
+    local function findScrollFrame(frame)
+        for _, child in ipairs(frame:GetDescendants()) do
+            if child:IsA("ScrollingFrame") then
+                return child
+            end
+        end
+        return nil
+    end
+    
+    -- Search functionality
+    searchBox.Changed:Connect(function(property)
+        if property ~= "Text" then return end
+        
+        local scrollFrame = findScrollFrame(tab.Frame)
+        if not scrollFrame then return end
+        
+        local searchTerm = string.lower(searchBox.Text)
+        
+        -- Iterate through scroll frame children
+        for _, child in ipairs(scrollFrame:GetChildren()) do
+            if child:IsA("Frame") then
+                local nameLabel = child:FindFirstChild("Title") or child:FindFirstChild("Name")
+                if nameLabel then
+                    local elementName = string.lower(nameLabel.Text)
+                    child.Visible = searchTerm == "" or elementName:find(searchTerm)
+                end
+            end
+        end
+    end)
+    
+    -- Add search box to tab
+    searchBox.Parent = tab.Frame
+    
+    return tab
+end
+
+-- Reinitialize the library to apply changes
+OrionLib:Init()
+
 local TpTab = Window:MakeTab({
     Name = "Tp utilities",
     Icon = "rbxassetid://4483345998",
@@ -598,14 +662,19 @@ MilkSection:AddToggle({
     end
 })
 
+-- Variable to control the auto equip and drop loop
+local autoEquipDropMilk = false
+local milkEquipDropThread
+
 MilkSection:AddToggle({
     Name = "Auto Equip & Drop Milk",
     Default = false,
     Callback = function(Value)
-        local autoEquipDropMilk = Value
-        
+        autoEquipDropMilk = Value
+
         if autoEquipDropMilk then
-            coroutine.wrap(function()
+            -- Start the auto equip and drop loop in a new thread
+            milkEquipDropThread = coroutine.create(function()
                 while autoEquipDropMilk do
                     local player = game.Players.LocalPlayer
                     local backpack = player.Backpack
@@ -641,10 +710,12 @@ MilkSection:AddToggle({
                             break
                         end
                     end
-                    
+
+                    -- Wait before the next iteration
                     wait(0.1)
                 end
-            end)()
+            end)
+            coroutine.resume(milkEquipDropThread)
         end
     end
 })
@@ -1231,5 +1302,81 @@ end
 -- Expose the utility globally if needed
 _G.createToggleableLoop = createToggleableLoop
 
--- Initialize the Orion library
+-- Universal Tab Search Function
+local function addSearchToTab(tab)
+    -- Create search input
+    local searchBox = Instance.new("TextBox")
+    searchBox.Name = "SearchBox"
+    searchBox.Size = UDim2.new(1, -20, 0, 35)
+    searchBox.Position = UDim2.new(0, 10, 0, 10)
+    searchBox.PlaceholderText = "🔍 Search functions..."
+    searchBox.Text = ""
+    searchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    searchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    searchBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+    searchBox.BorderSizePixel = 0
+    searchBox.Font = Enum.Font.Gotham
+    searchBox.TextSize = 14
+    
+    -- Rounded corners
+    local uiCorner = Instance.new("UICorner")
+    uiCorner.CornerRadius = UDim.new(0.2, 0)
+    uiCorner.Parent = searchBox
+    
+    -- Find the tab's content frame
+    local function findTabContentFrame(tab)
+        for _, child in ipairs(tab.Frame:GetDescendants()) do
+            if child:IsA("ScrollingFrame") then
+                return child
+            end
+        end
+        return nil
+    end
+    
+    -- Search functionality
+    searchBox.Changed:Connect(function(property)
+        if property ~= "Text" then return end
+        
+        local contentFrame = findTabContentFrame(tab)
+        if not contentFrame then return end
+        
+        local searchTerm = string.lower(searchBox.Text)
+        
+        -- Iterate through all children of the content frame
+        for _, child in ipairs(contentFrame:GetChildren()) do
+            if child:IsA("Frame") then
+                local nameLabel = child:FindFirstChild("Title") or child:FindFirstChild("Name")
+                if nameLabel then
+                    local elementName = string.lower(nameLabel.Text)
+                    child.Visible = searchTerm == "" or elementName:find(searchTerm)
+                end
+            end
+        end
+    end)
+    
+    -- Add to tab
+    searchBox.Parent = tab.Frame
+    
+    return searchBox
+end
+
+-- Add search to all tabs after initialization
+local function addSearchToAllTabs()
+    -- Wait a moment to ensure tabs are fully loaded
+    task.wait(1)
+    
+    local tabs = {
+        MainTab,
+        DaycareTab,
+        TpTab,
+        -- Add other tabs as needed
+    }
+    
+    for _, tab in ipairs(tabs) do
+        addSearchToTab(tab)
+    end
+end
+
+-- Call after library initialization
 OrionLib:Init()
+addSearchToAllTabs()
