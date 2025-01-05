@@ -105,6 +105,96 @@ MainTab:AddTextbox({
     end
 })
 
+-- Global Loop Breaker Utility
+local LoopBreaker = {}
+
+-- Centralized list of known automation scripts and their stop mechanisms
+LoopBreaker.automationScripts = {
+    {
+        name = "MilkAutomation",
+        stopFunction = function()
+            -- Directly set stop flags if they exist
+            if _G.STOP_MILK_CLICK ~= nil then
+                _G.STOP_MILK_CLICK = true
+            end
+            
+            if _G.STOP_MILK_EQUIP ~= nil then
+                _G.STOP_MILK_EQUIP = true
+            end
+        end
+    },
+    {
+        name = "ScientistAutoClicker",
+        stopFunction = function()
+            -- Stop scientist auto-clicking
+            if _G.isAutoClicking ~= nil then
+                _G.isAutoClicking = false
+            end
+            
+            -- Attempt to cancel existing token
+            pcall(function()
+                if autoClickCancellationToken and autoClickCancellationToken.cancel then
+                    autoClickCancellationToken:cancel()
+                end
+            end)
+        end
+    }
+}
+
+-- Advanced loop breaking function
+function LoopBreaker.breakAllLoops()
+    print("[LOOP BREAKER] Initiating emergency loop termination...")
+    
+    -- Stop all known automation scripts
+    for _, script in ipairs(LoopBreaker.automationScripts) do
+        local success, err = pcall(script.stopFunction)
+        if not success then
+            warn("[LOOP BREAKER] Error stopping " .. script.name .. ": " .. tostring(err))
+        else
+            print("[LOOP BREAKER] Stopped " .. script.name)
+        end
+    end
+    
+    -- Attempt to cancel all running tasks
+    for i = 1, 50 do  -- Reduced iteration to prevent potential hang
+        local success, result = pcall(function()
+            task.cancel(task.spawn(function() end))
+        end)
+        if not success then break end
+    end
+    
+    print("[LOOP BREAKER] Emergency termination complete.")
+end
+
+-- Modify the existing tab creation to include the break loops button
+local function addBreakLoopsButton(tab)
+    local breakLoopsButton = Instance.new("TextButton")
+    breakLoopsButton.Name = "BreakLoopsButton"
+    breakLoopsButton.Text = "🛑 Break All Loops"
+    breakLoopsButton.Font = Enum.Font.GothamBold
+    breakLoopsButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    breakLoopsButton.BackgroundColor3 = Color3.fromRGB(231, 76, 60)  -- Red color
+    breakLoopsButton.Size = UDim2.new(1, -10, 0, 40)
+    breakLoopsButton.Position = UDim2.new(0, 5, 1, -50)  -- Bottom of the tab
+    
+    -- Style the button
+    local uiCorner = Instance.new("UICorner")
+    uiCorner.CornerRadius = UDim.new(0.2, 0)
+    uiCorner.Parent = breakLoopsButton
+    
+    -- Button click event
+    breakLoopsButton.MouseButton1Click:Connect(function()
+        LoopBreaker.breakAllLoops()
+    end)
+    
+    breakLoopsButton.Parent = tab
+end
+
+-- Attempt to add the button to the existing MainTab
+pcall(function()
+    addBreakLoopsButton(MainTab)
+end)
+
 local TpTab = Window:MakeTab({
     Name = "Tp utilities",
     Icon = "rbxassetid://4483345998",
@@ -457,81 +547,53 @@ local MilkSection = DaycareTab:AddSection({
     Name = "🥛 MILK 🥛"
 })
 
+-- Variable to control the auto-click loop
+local autoClickMilk = false
+local milkClickThread
+
 MilkSection:AddToggle({
     Name = "Auto Click Milk",
     Default = false,
     Callback = function(Value)
-        local autoClickMilk = Value
-        
-        spawn(function()
-            local isRunning = true
-            while isRunning do
-                if not autoClickMilk then
-                    isRunning = false
-                    break
-                end
-                local clickDetector = nil
-                
-                -- Method 1: Direct path
-                local storeFreezer = workspace:FindFirstChild("Store Freezer")
-                if storeFreezer then
-                    local milk = storeFreezer:FindFirstChild("Milk")
-                    if milk then
-                        clickDetector = milk:FindFirstChildOfClass("ClickDetector")
-                    end
-                end
-                
-                -- Method 2: Search entire workspace if direct path fails
-                if not clickDetector then
-                    for _, v in pairs(workspace:GetDescendants()) do
-                        if v:IsA("ClickDetector") and 
-                           (string.lower(v.Parent.Name):find("milk") or 
-                            string.lower(v.Parent.Parent.Name):find("milk")) then
-                            clickDetector = v
-                            break
+        autoClickMilk = Value
+
+        if autoClickMilk then
+            -- Start the auto-click loop in a new thread
+            milkClickThread = coroutine.create(function()
+                while autoClickMilk do
+                    local clickDetector = nil
+
+                    -- Method 1: Direct path
+                    local storeFreezer = workspace:FindFirstChild("Store Freezer")
+                    if storeFreezer then
+                        local milk = storeFreezer:FindFirstChild("Milk")
+                        if milk then
+                            clickDetector = milk:FindFirstChildOfClass("ClickDetector")
                         end
                     end
-                end
-                
-                -- Attempt to click
-                if clickDetector then
-                    fireclickdetector(clickDetector)
-                end
-                wait(0.1)
-            end
-        end)
-    end
-})
 
-MilkSection:AddButton({
-    Name = "Click Milk",
-    Callback = function()
-        local clickDetector = nil
-        
-        -- Method 1: Direct path
-        local storeFreezer = workspace:FindFirstChild("Store Freezer")
-        if storeFreezer then
-            local milk = storeFreezer:FindFirstChild("Milk")
-            if milk then
-                clickDetector = milk:FindFirstChildOfClass("ClickDetector")
-            end
-        end
-        
-        -- Method 2: Search entire workspace if direct path fails
-        if not clickDetector then
-            for _, v in pairs(workspace:GetDescendants()) do
-                if v:IsA("ClickDetector") and 
-                   (string.lower(v.Parent.Name):find("milk") or 
-                    string.lower(v.Parent.Parent.Name):find("milk")) then
-                    clickDetector = v
-                    break
+                    -- Method 2: Search entire workspace if direct path fails
+                    if not clickDetector then
+                        for _, v in pairs(workspace:GetDescendants()) do
+                            if v:IsA("ClickDetector") and 
+                               (string.lower(v.Parent.Name):find("milk") or 
+                                string.lower(v.Parent.Parent.Name):find("milk")) then
+                                clickDetector = v
+                                break
+                            end
+                        end
+                    end
+
+                    -- Attempt to click
+                    if clickDetector then
+                        fireclickdetector(clickDetector)
+                    end
+
+                    -- Wait before the next iteration
+                    wait(0.1)
                 end
-            end
-        end
-        
-        -- Attempt to click
-        if clickDetector then
-            fireclickdetector(clickDetector)
+            end)
+            coroutine.resume(milkClickThread)
         end
     end
 })
@@ -542,89 +604,47 @@ MilkSection:AddToggle({
     Callback = function(Value)
         local autoEquipDropMilk = Value
         
-        spawn(function()
-            local isRunning = true
-            while isRunning do
-                if not autoEquipDropMilk then
-                    isRunning = false
-                    break
-                end
-                local player = game.Players.LocalPlayer
-                local backpack = player.Backpack
-                local character = player.Character
-                
-                -- Check both backpack and character for milk tools
-                local function dropMilkTool(tool)
-                    -- Unequip current tool if any
-                    local currentTool = character:FindFirstChildWhichIsA("Tool")
-                    if currentTool then
-                        currentTool.Parent = backpack
+        if autoEquipDropMilk then
+            coroutine.wrap(function()
+                while autoEquipDropMilk do
+                    local player = game.Players.LocalPlayer
+                    local backpack = player.Backpack
+                    local character = player.Character
+                    
+                    -- Check both backpack and character for milk tools
+                    local function dropMilkTool(tool)
+                        -- Unequip current tool if any
+                        local currentTool = character:FindFirstChildWhichIsA("Tool")
+                        if currentTool then
+                            currentTool.Parent = backpack
+                        end
+                        
+                        -- Equip milk tool
+                        tool.Parent = character
+                        
+                        -- Immediately drop the milk tool
+                        tool.Parent = workspace
                     end
                     
-                    -- Equip milk tool
-                    tool.Parent = character
+                    -- Check backpack
+                    for _, tool in pairs(backpack:GetChildren()) do
+                        if string.lower(tool.Name):find("milk") then
+                            dropMilkTool(tool)
+                            break
+                        end
+                    end
                     
-                    -- Immediately drop the milk tool
-                    tool.Parent = workspace
-                end
-                
-                -- Check backpack
-                for _, tool in pairs(backpack:GetChildren()) do
-                    if string.lower(tool.Name):find("milk") then
-                        dropMilkTool(tool)
-                        break
+                    -- Check character (in case milk was picked up)
+                    for _, tool in pairs(character:GetChildren()) do
+                        if string.lower(tool.Name):find("milk") then
+                            dropMilkTool(tool)
+                            break
+                        end
                     end
+                    
+                    wait(0.1)
                 end
-                
-                -- Check character (in case milk was picked up)
-                for _, tool in pairs(character:GetChildren()) do
-                    if string.lower(tool.Name):find("milk") then
-                        dropMilkTool(tool)
-                        break
-                    end
-                end
-                wait(0.1)
-            end
-        end)
-    end
-})
-
-MilkSection:AddButton({
-    Name = "Equip & Drop Milk",
-    Callback = function()
-        local player = game.Players.LocalPlayer
-        local backpack = player.Backpack
-        local character = player.Character
-        
-        -- Check both backpack and character for milk tools
-        local function dropMilkTool(tool)
-            -- Unequip current tool if any
-            local currentTool = character:FindFirstChildWhichIsA("Tool")
-            if currentTool then
-                currentTool.Parent = backpack
-            end
-            
-            -- Equip milk tool
-            tool.Parent = character
-            
-            -- Immediately drop the milk tool
-            tool.Parent = workspace
-        end
-        
-        -- Check backpack
-        for _, tool in pairs(backpack:GetChildren()) do
-            if string.lower(tool.Name):find("milk") then
-                dropMilkTool(tool)
-                break
-            end
-        end
-        
-        -- Check character (in case milk was picked up)
-        for _, tool in pairs(character:GetChildren()) do
-            if string.lower(tool.Name):find("milk") then
-                dropMilkTool(tool)
-                break
-            end
+            end)()
         end
     end
 })
@@ -1157,6 +1177,59 @@ ChalkShelfSection:AddSlider({
         chalkShelfAutoClickSpeed = Value
     end
 })
+
+-- Universal Toggle Loop Management
+local function createToggleableLoop(toggleFunction, loopFunction, options)
+    options = options or {}
+    local waitTime = options.waitTime or 0.1
+    local debugPrint = options.debug or false
+    
+    local isRunning = false
+    local currentThread = nil
+    
+    local function startLoop()
+        if not isRunning then
+            isRunning = true
+            if debugPrint then print("[ToggleLoop] Starting loop") end
+            currentThread = task.spawn(function()
+                while isRunning do
+                    local success, err = pcall(loopFunction)
+                    if not success then
+                        warn("[ToggleLoop] Error in loop: " .. tostring(err))
+                        isRunning = false
+                        break
+                    end
+                    task.wait(waitTime)
+                end
+                if debugPrint then print("[ToggleLoop] Loop stopped") end
+            end)
+        end
+    end
+    
+    local function stopLoop()
+        if isRunning then
+            isRunning = false
+            if currentThread then
+                task.cancel(currentThread)
+                currentThread = nil
+                if debugPrint then print("[ToggleLoop] Forcibly stopped loop") end
+            end
+        end
+    end
+    
+    -- Wrap the original toggle function to manage the loop
+    return function()
+        local shouldContinue = toggleFunction()
+        if shouldContinue then
+            startLoop()
+        else
+            stopLoop()
+        end
+    end
+end
+
+-- Expose the utility globally if needed
+_G.createToggleableLoop = createToggleableLoop
 
 -- Initialize the Orion library
 OrionLib:Init()
